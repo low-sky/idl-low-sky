@@ -1,5 +1,5 @@
 pro helio2lsr, vhelio, vlsr, ra = ra, dec = dec, g = g, reverse = reverse, $
-               dynamical = dynamical,  kinematic = kinematic
+               dynamical = dynamical,  kinematic = kinematic, mps = mps
 ;+
 ; NAME:
 ;   HELIO2LSR
@@ -21,6 +21,7 @@ pro helio2lsr, vhelio, vlsr, ra = ra, dec = dec, g = g, reverse = reverse, $
 ;                LSR (Default)
 ;   DYNAMICAL -- Set to use with the Dynamical definition of the LSR.
 ;   (see http://www.gb.nrao.edu/~fghigo/gbtdoc/doppler.html)
+;   MPS -- If set, velocities are in M/S else km/s
 ; OUTPUTS:
 ;   V_LSR -- The other one is returned, unless REVERSE is set.
 ;
@@ -51,11 +52,11 @@ pro helio2lsr, vhelio, vlsr, ra = ra, dec = dec, g = g, reverse = reverse, $
   if (not keyword_set(dynamical)) or (keyword_set(kinematic)) then begin
     solarmotion_ra = ((18+03/6d1+50.29/3.6d3)*15)*!dtor
     solarmotion_dec = (30+0/6d1+16.8/3.6d3)*!dtor
-    solarmotion_mag = 20.0
+    solarmotion_mag = (keyword_set(mps)) ? 20.0*1d3 : 20.0
   endif else begin
     solarmotion_ra = ((17+49/6d1+58.667/3.6d3)*15)*!dtor
     solarmotion_dec = (28+7/6d1+3.96/3.6d3)*!dtor
-    solarmotion_mag = 16.55294
+    solarmotion_mag = (keyword_set(mps)) ? 16.55294*1d3 : 16.55294
   endelse
 
   racalc = ra*!dtor
