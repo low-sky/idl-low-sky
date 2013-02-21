@@ -83,23 +83,23 @@ function alllocmax, cubein, indcube = indcube, friends = friends, $
      for k = -specfriends, specfriends do begin
         for j = -friends, friends do begin
            for i = -friends, friends do begin
-              if (NOT ((i eq 0) AND (j eq 0) AND (k eq 0))) and $
-                 patch[i,j] then $
+              if (NOT ((i eq 0) AND (j eq 0) AND (k eq 0))) AND patch[i-friends,j-friends] then $
                  lmaxcube = $
                  lmaxcube*((cube gt shift(cube, i, j, k)) OR $
-                           (finite(shift(cube, i, j, k)) eq 0)) 
+                           (finite(shift(cube, i, j, k)) eq 0))
            endfor
         endfor
      endfor
   endif else begin
      for j = -friends, friends do $
         for i = -friends, friends do $
-           if (NOT ((i eq 0) AND (j eq 0))) AND patch[i,j] then $
+           if (NOT ((i eq 0) AND (j eq 0))) AND patch[i-friends,j-friends] then $
               lmaxcube = $
         lmaxcube*((cube gt shift(cube, i, j)) OR $
                   (finite(shift(cube, i, j)) eq 0))
   endelse
 
+  
   lmaxind = where(lmaxcube eq 1B, num)
   if (num eq 0) then begin
      message, 'No true local max found, defaulting to high point in data.', /con
