@@ -75,17 +75,17 @@ for i = 0, n_elements(leafnodes)-1 do begin
 
     str = contour_prop(float(x), float(y), float(v), float(t), ind[0], $
                        levels = levels[calc_levels], $
-                       noextrap = 1, $
+                       noextrap = noextrap, $
                        all_neighbors = all_neighbors, $
                        forcelin = forcelin, remove_min = clip, err = err)
-
+    
     strrot = contour_prop(float(x), float(y), float(v), float(t), ind[0], $
                           levels = levels[calc_levels], $
-                          noextrap = 1, $
+                          noextrap = noextrap, $
                           all_neighbors = all_neighbors, /rotate, $
                           forcelin = forcelin, remove_min = clip, err = err, $
                           pavec = pavec)
-
+    
 
 
 ; Fill in the property matrices for this kernel.
@@ -103,10 +103,10 @@ for i = 0, n_elements(leafnodes)-1 do begin
     pamat[i, calc_levels] = pavec+!pi/2*(strrot.rmsy gt strrot.rmsx)
     minmat[i, calc_levels] = (strrot.rmsy < strrot.rmsx)
     majmat[i,calc_levels] = (strrot.rmsx > strrot.rmsy)
-    if keyword_set(extrapolate) then begin
-        message,'Warning!  Extrapolation currently disabled!  You are not getting extrapolated properties!',/con
-        vmat[i, calc_levels] = sqrt((str.rmsv)^2)*deltav
-    endif
+;    if keyword_set(extrapolate) then begin
+;        message,'Warning!  Extrapolation currently disabled!  You are not getting extrapolated properties!',/con
+;    vmat[i, calc_levels] = sqrt((str.rmsv)^2)*deltav
+;    endif
 
 ; Fill in any common values that we can determine based on our
 ; calculations
