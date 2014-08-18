@@ -1,10 +1,9 @@
-function firstguess, v,t
+function firstguess, vin,tin
   
 
   p = 0
   
   ckms = 2.99792458d5
-  nelts = n_elements(v) 
   
   voff_lines = [19.8513, $
                 19.3159, $
@@ -46,6 +45,19 @@ function firstguess, v,t
 
 ;  lines = (1-voff_lines/ckms)*23.6944955d0
 
+; accept the first contiguous block of velocities
+
+  ind = where(abs(vin-shift(vin,-1)) gt 200,ct)
+  if ct gt 1 then begin
+     v = vin[0:(ind[0]-1)]
+     t = tin[0:(ind[0]-1)]
+  endif else begin
+     v = vin
+     t = tin
+  endelse
+
+  nelts = n_elements(v) 
+
   kernel = fltarr(n_elements(t))
   xax = findgen(n_elements(t)) 
   width = 15
@@ -58,19 +70,23 @@ function firstguess, v,t
 
   null = max(lags,hitlag)
   shift = hitlag - nelts/2
-
-  null = min(abs(v),v0)
-  vobj = v[v0-shift]
+  dv = median(v-shift(v,-1))
+  vobj = shift*dv
+;  null = min(abs(v),v0)
+;  vobj = v[v0-shift]
 ;  nuobj = nu[v0-shift]-23.6944955d0
-  tautex = t[v0-shift]*2 > mad(t)
-  
-  ind = where(abs(xax-v0+shift) lt 30)
-  dx =xax[ind]-v0+shift
-  sigv = sqrt(total((dx)^2*t[ind])/total(t[ind])>0.1^2)
-  dv = abs(median(v-shift(v,1)))
-  sigv = sigv*dv
+;  tautex = t[v0-shift]*2 > mad(t)
+  tautex = interpol(t,v,vobj)
+  ind = where((abs(v-vobj) lt 5) and (t gt 0))
+;  dx =xax[ind]-v0+shift
+  sigv = sqrt(total(t[ind]*v[ind]^2)/total(t[ind])-$
+              (total(t[ind]*v[ind])/total(t[ind]))^2)
 
-  p = double([20.0, tautex, sigv>0.08, vobj])
+;  sigv = sqrt(total((dx)^2*t[ind])/total(t[ind])>0.1^2)
+;
+;  sigv = sigv*abs(dv)
+
+  p = double([20.0, tautex>mad(t), sigv>0.08, vobj])
 
   return, p
 end

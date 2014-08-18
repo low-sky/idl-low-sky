@@ -1,5 +1,5 @@
 pro nh3fit, nu, tmb, parinfo = parinfoin, s = s, rms = rmsin, $
-            bestfit = bestfit, quiet = quiet
+            bestfit = bestfit, quiet = quiet, mask = mask
 ;+
 ; NAME:
 ;   NH3FIT
@@ -21,6 +21,7 @@ pro nh3fit, nu, tmb, parinfo = parinfoin, s = s, rms = rmsin, $
 ;   RMS -- RMS of the spectrum either element-wise or a scalar.  If missing,
 ;          estimated from the data.
 ;   QUIET -- Suppress output for MPFIT.
+;   MASK -- index array indicating channels to include in fit
 ; OUTPUTS:
 ;   S -- BOLONH3 structure with all the fit parameters and derived data.  Only
 ;        some fields will be populated by this routine.
@@ -70,7 +71,7 @@ pro nh3fit, nu, tmb, parinfo = parinfoin, s = s, rms = rmsin, $
                    parinfo = parinfo,perror = perror, $
                    maxiter = 200, dof = dof_out, quiet = quiet)
   voff = model[3]
-  s.tautex = model[1]
+  s.tautex = model[1] 
   s.tautex_err = perror[1]
   modelerr = perror
   
@@ -81,7 +82,6 @@ pro nh3fit, nu, tmb, parinfo = parinfoin, s = s, rms = rmsin, $
   pm[0].value = model[0]>2.73
   pm[2].value = model[2]>0.08
   pm[3].value = model[3]
-
   if model[1]/perror[1] gt 3 then begin
 
 
@@ -93,7 +93,7 @@ pro nh3fit, nu, tmb, parinfo = parinfoin, s = s, rms = rmsin, $
                           parinfo = parinfo, perror = perror, maxiter = 200, quiet = quiet)
 
      yfit = modelspec(nu,fullmodel,tau11 = tau11)        
-     mask = where(dilate(yfit gt 0,fltarr(31)+1),ct)
+     if n_elements(mask) le 1 then mask = where(dilate(yfit gt 0,fltarr(31)+1),ct)
      voff = fullmodel[3]
      modelerr = perror
      model = fullmodel
@@ -205,7 +205,7 @@ pro nh3fit, nu, tmb, parinfo = parinfoin, s = s, rms = rmsin, $
 
      s.n_nh3 = 1d1^model[1]
      s.err_nh3 = 1d1^(model[1]+modelerr[1])-1d1^(model[1])
-     if n_elements(ffmodel) gt 1 then begin 
+     if n_elements(ffmodel) gt 1 and n_elements(ffmodelerr) gt 1 then begin 
         s.fillfrac = ffmodel[4]
         s.fillfrac_err = ffmodelerr[4]
 ;        s.n_nh3_lte = 1d1^ffmodel[1]

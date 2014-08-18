@@ -1,5 +1,5 @@
 pro nh3fit_twocomp, nu, tmb, parinfo = parinfoin, s1 = s1, rms = rmsin, $
-                    bestfit = bestfit, quiet = quiet, s2 = s2, s0 = s
+                    bestfit = bestfit, quiet = quiet, s2 = s2, s0 = s, maskin = mask
 ;+
 ; NAME:
 ;   NH3FIT
@@ -36,7 +36,9 @@ pro nh3fit_twocomp, nu, tmb, parinfo = parinfoin, s1 = s1, rms = rmsin, $
 
   defsysv,'!NH3',exists = exists
   if not exists then defsysv,'!NH3',{DATA_DIR:'',$
-                                     PLOT_DIR:'',REDUCED_DIR:'',ROOT:'',FREQSW:[!values.f_nan,!values.f_nan],$
+                                     PLOT_DIR:'',REDUCED_DIR:'',$
+                                     ROOT:'',$
+                                     FREQSW:[!values.f_nan,!values.f_nan],$
                                      FREQSWTHROW:!values.f_nan}
 
 
@@ -49,9 +51,10 @@ pro nh3fit_twocomp, nu, tmb, parinfo = parinfoin, s1 = s1, rms = rmsin, $
   if n_elements(rmsin) eq 0 then rmsin = mad(tastar)
   if n_elements(rmsin) ne n_elements(tmb) then rms = replicate(rmsin[0],n_elements(tmb)) else rms = rmsin
 
+  if n_elements(mask) eq 0 then mask = indgen(n_elements(nu)) 
   if n_elements(s) eq 0 then begin 
      nh3fit,nu,tmb, parinfo = pm, s = s, rms = rms, $
-            bestfit = bestfit
+            bestfit = bestfit, mask = mask
   endif
   
   p = [pm[0].value,pm[6].value,pm[2:3].value]
@@ -64,7 +67,7 @@ pro nh3fit_twocomp, nu, tmb, parinfo = parinfoin, s1 = s1, rms = rmsin, $
                        fixed:0b, value:0d0}, 12)                
 
   parinfo[0].limited[0] = 1b                    
-  parinfo[0].limits[0] = 2.73                   
+  parinfo[0].limits[0] = 5.0 ; Use a higher temperature limit                   
   parinfo[1].limited[0] = 1b                    
   parinfo[1].limits[0] = 0.0                    
   
@@ -81,40 +84,50 @@ pro nh3fit_twocomp, nu, tmb, parinfo = parinfoin, s1 = s1, rms = rmsin, $
   parinfo[5].fixed = 1b
   parinfo[6:11] = parinfo[0:5]
   
-  p = [fullmodel,fullmodel]
-  p[0] = p[0]*1.2
-  p[6]= p[6]*0.8
-  p[1] = p[1] - 0.3
-  p[7] = p[7] - 0.3
-  p[3] = p[3] + p[2]*1.2        ; Split lines by the width of the original line
-  p[9] = p[9] - p[2]*1.2
-  p[2] = p[2]/2.4>0.08
-  p[8] = p[8]/2.4>0.08
+; Run attempt 1: split lines and try to find two separate components in velocity.
 
-  p[0] = p[0]*0.7
-  p[6]= p[6]*1.5
-  p[1] = p[1] - 0.3
-  p[7] = p[7] - 0.6
-  p[3] = p[3] ;+ p[2]*1.2        ; Split lines by the width of the original line
-  p[9] = p[9] ;- p[2]*1.2
-  p[2] = p[2]/2.4>0.08
-  p[8] = p[8] >0.08
+  p1 = [fullmodel,fullmodel]
+  p2 = p1
+  p1[0] = p1[0]    ; Modest split of temperature
+  p1[6] = p1[6]
+  p1[1] = p1[1] - 0.3  ; Half the column in each component.
+  p1[7] = p1[7] - 0.3  
+  p1[3] = p1[3] + p[2]*1.5   ; Split lines by the width of the original line
+  p1[9] = p1[9] - p[2]*1.5
+  p1[2] = p1[2]/2.5>0.08
+  p1[8] = p1[8]/2.5>0.08
+  ind = mask   
+  fullmodel1 = mpfitfun('model_twocomp',nu[ind],tmb[ind],rms[ind],p1,$
+                       parinfo = parinfo, perror = perror1, maxiter = 200)
+  chisq_test1 = total((model_twocomp(nu[ind],fullmodel1)-tmb[ind])^2/rms[ind]^2)
 
 
-  ;; rms = [replicate(mad(sp.ta11),n_elements(sp.ta11)),$
-  ;;        replicate(mad(sp.ta22),n_elements(sp.ta22)),$
-  ;;        replicate(mad(sp.ta33),n_elements(sp.ta33))]
-  ;; spec = [sp.ta11,sp.ta22,sp.ta33]
-  ;; nu = [sp.nu11,sp.nu22,sp.nu33]
+; Run attempt 2: keep a similar velocity but spread cold and narrow and hot
+; and broad
 
-  ind = where(tmb eq tmb)
-;     tmb = tmb[ind]
-;     nu = nu[ind]
-;     rms = rms[ind]
-  
-  fullmodel = mpfitfun('model_twocomp',nu[ind],tmb[ind],rms[ind],p,$
-                       parinfo = parinfo, perror = perror, maxiter = 200)
-  if n_elements(perror) ne n_elements(p) then return
+  p2[0] = p2[0]*2    ; Big split of temperature
+  p2[6]= (p2[6]*0.5) > 5.0
+  p2[1] = p2[1] - 0.3  ; Half the column in each component.
+  p2[7] = p2[7] - 0.3  
+  p2[3] = p2[3]  ; Same velocity centroid
+  p2[9] = p2[9] 
+  p2[2] = p2[2]*3 ; Hot line is broad
+  p2[8] = p2[8]/3>0.08 ; Cold line is narrow
+
+  fullmodel2 = mpfitfun('model_twocomp',nu[ind],tmb[ind],rms[ind],p2,$
+                       parinfo = parinfo, perror = perror2, maxiter = 200)
+
+  chisq_test2 = total((model_twocomp(nu[ind],fullmodel2)-tmb[ind])^2/rms[ind]^2)
+   
+  if chisq_test2 lt chisq_test1 then begin
+     fullmodel =fullmodel2
+     perror = perror2
+  endif else begin
+     fullmodel = fullmodel1
+     perror = perror1
+  endelse
+
+  if n_elements(perror) ne n_elements(fullmodel) then return
   
   s1.n_nh3 = 1d1^fullmodel[1]
   s1.err_nh3 = 1d1^(fullmodel[1]+perror[1])-1d1^(fullmodel[1])
@@ -145,7 +158,6 @@ pro nh3fit_twocomp, nu, tmb, parinfo = parinfoin, s1 = s1, rms = rmsin, $
   s2.vlsr = fullmodel[9]
   s2.vlsr_err = perror[9]
   s2.modelerr = perror[6:11]
-
   yfit = model_twocomp(nu,fullmodel)
   voff = fullmodel[3]
   n11fit = yfit
@@ -224,7 +236,6 @@ pro nh3fit_twocomp, nu, tmb, parinfo = parinfoin, s1 = s1, rms = rmsin, $
      s1.chisq44 = total((ta44[on]-n44fit[on])^2/s.noise44^2)/(ct-10)>0
      s2.chisq44 = total((ta44[on]-n44fit[on])^2/s.noise44^2)/(ct-10)>0
   endif
-
 ; -----------------------  END TWO COMPONENT FITTING -----------
 
 
