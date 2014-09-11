@@ -74,7 +74,7 @@ pro bootstrap_nh3errors, nu, tmb, s, niters= niters, parinfo = parinfo
   endfor
 
   for jj = 0,n_elements(p)-1 do begin
-     print,'Checking '+string(jj)+'th parameter...'
+     print,'Checking '+string(jj)+'th parameter: '+parinfo[jj].name
      rets = pvec_out[jj,*] 
      idx = where(rets eq rets,ct)
      if ct gt 0 then begin
