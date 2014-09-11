@@ -36,32 +36,18 @@ pro bootstrap_nh3errors, nu, tmb, s, niters= niters, parinfo = parinfo
 ;
 ;-
 
-
-;+
-;
-
-;
-;   nu -- frequency axis
-;   tmb -- Main beam temperature
-;   s -- output structure from nh3fit
-;  
-;  This is a routine to 
-;
-;-
-
   if not keyword_set(niters) then  niters = 100
 
-  pvec = s.model
-  perrvec = s.modelerr
+  pvec = s.model[0:6]
+  perrvec = s.modelerr[0:6]
 
   pvec_out = fltarr(n_elements(pvec),niters) 
   perrvec_out = fltarr(n_elements(pvec),niters) 
-
+  if n_elements(parinfo) eq 0 then parinfo = nh3parinfo() 
   for i = 0,niters -1 do begin
      rms = median(abs(tmb-median(tmb)))/0.67+fltarr(n_elements(tmb))
  
      p = pvec + 10* randomn(seed,n_elements(pvec)) * perrvec
-
      fullmodel = mpfitfun('modelspec',nu,tmb,rms,p,$
                           parinfo = parinfo, perror = perror,$
                           maxiter = 200, quiet = quiet)
@@ -93,21 +79,13 @@ pro bootstrap_nh3errors, nu, tmb, s, niters= niters, parinfo = parinfo
      idx = where(rets eq rets,ct)
      if ct gt 0 then begin
         rets = rets[idx]
-        uniqvals = uniq(rets,sort(rets))
-        if n_elements(uniqvals) eq 1 then begin
-           print, $
-           'No evidence of multiple local  minima'
-           endif else begin
-           print,'Multiple minima found...'
-           for kk = 0,n_elements(uniqvals)-1 do begin
-              print,string(rets[uniqvals[kk]])+' :  '+string(total(rets[uniqvals[kk]] eq rets)/n_elements(rets)*100)+' %'
-           endfor 
-        endelse
-
+        zscore = (s.model[jj]-rets)/(s.modelerr[jj])
+        bad = where(abs(zscore) gt 1,ctbad,complement=okay)
+        print,string(ctbad/float(ct)*100)+$
+              ' % of bootstrap > 1 sigma from fit values'
      endif
 
   endfor 
 
-  stop
   return
 end
