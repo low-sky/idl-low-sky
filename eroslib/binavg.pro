@@ -40,6 +40,11 @@ function binavg, x_in, y_in, _ref_extra = ex, stdev = stdev_y, $
 ;
 ; MODIFICATION HISTORY:
 ;
+;       Tue Oct 20 11:46:56 2015, <erosolo@noise.siglab.ok.ubc.ca>
+;
+;		Small fixes to make rejection work. Thanks to Adam
+;		McLean for pointing out the errors."
+;
 ;       Wed Aug 11 09:44:33 2004, <eros@master>
 ;		Added RANK keyword.
 ;
