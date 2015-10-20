@@ -100,8 +100,8 @@ function binavg, x_in, y_in, _ref_extra = ex, stdev = stdev_y, $
       end
       else: begin
         index = ri[ri[i]:ri[i+1]-1] 
-        moment_y = moment(y[index], sdev = sdy, /nan) 
-        moment_x = moment(x[index], sdev = sdx, /nan) 
+        moment_y = (moment(y[index], sdev = sdy, /nan))[0]
+        moment_x = (moment(x[index], sdev = sdx, /nan))[0]
         binmin[i] = min(y[index], /nan)
         binmax[i] = max(y[index], /nan)
 
@@ -111,8 +111,8 @@ function binavg, x_in, y_in, _ref_extra = ex, stdev = stdev_y, $
           ind = where(yvals ge moment_y-reject*sdy and $
                       yvals le moment_y+reject*sdy, ct)
           if ct gt 2 then moment_y = moment(yvals[ind],  sdev = sdy, /nan) 
-          binmin[i] = min(yvals, /nan)
-          binmax[i] = max(yvals, /nan)
+          binmin[i] = min(yvals[ind], /nan)
+          binmax[i] = max(yvals[ind], /nan)
 
         endif
         yavg[i] = moment_y[0]
