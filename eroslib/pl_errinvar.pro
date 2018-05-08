@@ -7,6 +7,7 @@ function pl_errinvar, x, y, sigma_x, sigma_y
 ; for parameters p.
 
   gain = 0.1
+  inner_gain = max(x/sigma_x) > 0.5 ? (max(x/sigma_x)) * 0.01 : 0.01
 
 ; First get an initial guess.
   fit = bces(alog(x), alog(y), xerr = alog(1+sigma_x/x), $
@@ -31,7 +32,7 @@ function pl_errinvar, x, y, sigma_x, sigma_y
       fofx = ((true_vec[0, *]/theta[0])^(theta[1]+1))
       true_2 = vec-v*b/(total(v*b^2, 1)##[1, 1])*$
                (((fofx-true_vec[1, *])+$
-                 transpose(total(B*(vec-true_vec), 1)))##[1, 1])
+                 transpose(total(B*(vec-true_vec), 1)))##[1, 1]) * inner_gain
       delta = abs((true_2-true_vec)/true_vec)
       if total(delta gt 1e-6) eq 0 then goto, endinner
       true_vec = true_2

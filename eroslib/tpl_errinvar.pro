@@ -2,12 +2,13 @@ function tpl_errinvar, x, y, sigma_x, sigma_y, convfail = convfail
 
 
   gain = 0.5
+  inner_gain = max(x/sigma_x) > 0.5 ? (max(x/sigma_x)) * 0.01 : 0.01
 
 ; First get an initial guess.
   fit = bces(alog(x), alog(y), xerr = alog(1+sigma_x/x), $
              yerr = alog(1+sigma_y/y))
   convfail = 1b
-
+  
 ; Initialized parameters
 ; theta = [N_0, M_0, gamma]
 
@@ -15,7 +16,8 @@ function tpl_errinvar, x, y, sigma_x, sigma_y, convfail = convfail
   vec = [transpose(x), transpose(y)]
   true_vec = vec
   v = [transpose(sigma_x), transpose(sigma_y)]^2
- for outer = 0L, 100000 do begin
+
+  for outer = 0L, 100000 do begin
     for inner = 0, 100 do begin
 ; First partials of fcn w.r.t. to variables
 ;      B = [(theta[2]+1)*theta[0]/theta[1]*(true_vec[0, *]/theta[1])^(theta[2]), $
@@ -29,12 +31,12 @@ function tpl_errinvar, x, y, sigma_x, sigma_y, convfail = convfail
 
       true_2 = vec-v*b/(total(v*b^2, 1)##[1, 1])*$
                (((fofx-true_vec[1, *])+$
-                 transpose(total(B*(vec-true_vec), 1)))##[1, 1])
+                 transpose(total(B*(vec-true_vec), 1)))##[1, 1]) * inner_gain
       delta = abs((true_2-true_vec)/true_vec)
       if total(delta gt 1e-6) eq 0 then goto, endinner
       true_vec = true_2
 ;      oplot, true_vec[0, *], true_vec[1, *]
-    endfor
+   endfor
     print, 'Warning -- Inner loop failed to converge'
     endinner:
 ; Then, with the iterated "true_vec" calculate next step of parameter
